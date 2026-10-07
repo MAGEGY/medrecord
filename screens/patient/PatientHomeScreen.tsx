@@ -3,12 +3,17 @@ import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import QRCodeGenerator from '@/components/QRCodeGenerator'; // Import QRCodeGenerator
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { prescriptionService, lifestyleService, MEDICAL_ADVICE } from '@/utils/data';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+
+// Mock patient conditions and cultural context for demonstration purposes
+const MOCK_PATIENT_CONDITIONS = ['hypertension', 'diabetes'];
+const MOCK_PATIENT_CULTURAL_CONTEXT = ['general', 'mediterranean']; // Example: could be derived from user profile
 
 export default function PatientHomeScreen() {
   const { theme } = useTheme();
@@ -17,6 +22,7 @@ export default function PatientHomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const [prescriptionCount, setPrescriptionCount] = useState(0);
   const [latestVitals, setLatestVitals] = useState<any>(null);
+  const [showQrCode, setShowQrCode] = useState(false); // New state for QR code visibility
 
   useEffect(() => {
     loadData();
@@ -83,10 +89,29 @@ export default function PatientHomeScreen() {
         <ThemedText style={[styles.greeting, { color: theme.textSecondary }]}>
           {getGreeting()}
         </ThemedText>
-        <ThemedText style={[styles.userName, { color: theme.text }]}>
-          {user?.displayName}
-        </ThemedText>
+        <View style={styles.userNameContainer}>
+          <ThemedText style={[styles.userName, { color: theme.text }]}>
+            {user?.displayName}
+          </ThemedText>
+          <Pressable onPress={() => setShowQrCode(!showQrCode)} style={styles.qrIconContainer}>
+            <MaterialCommunityIcons 
+              name={showQrCode ? "qrcode-remove" : "qrcode-scan"} // Change icon based on visibility
+              size={28} 
+              color={theme.primary} 
+            />
+          </Pressable>
+        </View>
       </ThemedView>
+
+      {showQrCode && user?.id && (
+        <ThemedView style={[styles.qrCodeSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <ThemedText style={[styles.qrCodeTitle, { color: theme.text }]}>Your Patient ID QR Code</ThemedText>
+          <QRCodeGenerator value={user.id} size={200} />
+          <ThemedText style={[styles.qrCodeHint, { color: theme.textSecondary }]}>
+            Show this QR code to your doctor or pharmacist for quick identification.
+          </ThemedText>
+        </ThemedView>
+      )}
 
       {prescriptionCount > 0 && (
         <Pressable 
@@ -104,6 +129,7 @@ export default function PatientHomeScreen() {
           </View>
         </Pressable>
       )}
+
 
       <View style={styles.section}>
         <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>
@@ -145,9 +171,20 @@ export default function PatientHomeScreen() {
         <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>
           Health Advice
         </ThemedText>
-        {MEDICAL_ADVICE.slice(0, 3).map((advice, index) => (
-          <AdviceCard key={index} item={advice} />
-        ))}
+        {MEDICAL_ADVICE
+          .filter(advice => {
+            // Filter by condition: advice applies if it has no conditions or if any of its conditions match patient's conditions
+            const conditionMatch = advice.conditions.length === 0 ||
+                                   advice.conditions.some(cond => MOCK_PATIENT_CONDITIONS.includes(cond));
+            // Filter by cultural context: advice applies if it's general or if any of its contexts match patient's contexts
+            const culturalMatch = advice.culturalContext.includes('general') ||
+                                  advice.culturalContext.some(ctx => MOCK_PATIENT_CULTURAL_CONTEXT.includes(ctx));
+            return conditionMatch && culturalMatch;
+          })
+          .slice(0, 3) // Still show only up to 3 advice items
+          .map((advice, index) => (
+            <AdviceCard key={index} item={advice} />
+          ))}
       </View>
     </ScrollView>
   );
@@ -254,5 +291,32 @@ const styles = StyleSheet.create({
   adviceDescription: {
     fontSize: 12,
     lineHeight: 18,
+  },
+  userNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  qrIconContainer: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  qrCodeSection: {
+    marginHorizontal: Spacing.xl,
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  qrCodeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: Spacing.md,
+  },
+  qrCodeHint: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: Spacing.md,
   },
 });

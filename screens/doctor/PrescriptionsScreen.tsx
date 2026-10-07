@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable, Alert, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import QRCodeGenerator from '@/components/QRCodeGenerator'; // Import QRCodeGenerator
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
@@ -10,13 +11,17 @@ import { prescriptionService } from '@/utils/data';
 import { Prescription } from '@/types';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as Linking from 'expo-linking';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 export default function PrescriptionsScreen() {
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const { user } = useAuth();
   const tabBarHeight = useBottomTabBarHeight();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showQrCodeModal, setShowQrCodeModal] = useState(false); // State to control QR code modal visibility
+  const [selectedPrescriptionForQr, setSelectedPrescriptionForQr] = useState<Prescription | null>(null); // State to hold the prescription for QR code display
 
   useEffect(() => {
     loadPrescriptions();
@@ -54,7 +59,12 @@ export default function PrescriptionsScreen() {
         {
           text: 'Send',
           onPress: () => {
-            Alert.alert('Success', 'Prescription link sent via SMS');
+            // In a real application, this would call a backend service
+            // that uses Twilio (or similar) to send the SMS with the webLink.
+            Alert.alert(
+              'Success', 
+              `Prescription link sent to ${prescription.patientName} via SMS:\n${prescription.webLink}`
+            );
           },
         },
       ]
@@ -71,6 +81,10 @@ export default function PrescriptionsScreen() {
           [
             { text: 'OK' },
             { text: 'Send SMS', onPress: () => sendViaSMS(item) },
+            { text: 'View QR Code', onPress: () => {
+              setSelectedPrescriptionForQr(item);
+              setShowQrCodeModal(true);
+            }},
           ]
         );
       }}
@@ -155,6 +169,45 @@ export default function PrescriptionsScreen() {
           </View>
         }
       />
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showQrCodeModal}
+        onRequestClose={() => {
+          setShowQrCodeModal(!showQrCodeModal);
+          setSelectedPrescriptionForQr(null);
+        }}
+      >
+        <ThemedView style={styles.centeredView}>
+          <ThemedView style={[styles.modalView, { backgroundColor: theme.surface }]}>
+            <ThemedText style={[styles.modalTitle, { color: theme.text }]}>
+              Prescription QR Code
+            </ThemedText>
+            {selectedPrescriptionForQr && (
+              <QRCodeGenerator value={selectedPrescriptionForQr.qrCode} size={250} />
+            )}
+            <Pressable
+              style={[styles.modalButton, { backgroundColor: theme.primary }]}
+              onPress={() => {
+                setShowQrCodeModal(!showQrCodeModal);
+                setSelectedPrescriptionForQr(null);
+              }}
+            >
+              <ThemedText style={[styles.modalButtonText, { color: theme.buttonText }]}>
+                Close
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
+        </ThemedView>
+      </Modal>
+
+      <Pressable
+        style={[styles.fab, { backgroundColor: theme.primary }]}
+        onPress={() => navigation.navigate('CreatePrescription')}
+      >
+        <MaterialCommunityIcons name="plus" size={30} color={theme.buttonText} />
+      </Pressable>
     </ThemedView>
   );
 }
@@ -243,4 +296,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: Spacing.xl,
   },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalView: {
+    margin: Spacing['3xl'],
+    borderRadius: BorderRadius.lg,
+    padding: Spacing['3xl'],
+    alignItems: 'center',
+    ...Shadows.card,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: Spacing.xl,
+  },
+  modalButton: {
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.md,
+    elevation: 2,
+    marginTop: Spacing.xl,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: Spacing.xl + tabBarHeight, // Adjust for tab bar height
+    right: Spacing.xl,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.fab, // Custom shadow for FAB
+  },
 });
+

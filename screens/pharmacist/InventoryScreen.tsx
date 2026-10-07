@@ -8,6 +8,7 @@ import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { medicineService } from '@/utils/data';
 import { Medicine } from '@/types';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import MedicineFormModal from '@/components/MedicineFormModal'; // Import MedicineFormModal
 
 export default function InventoryScreen() {
   const { theme } = useTheme();
@@ -16,6 +17,8 @@ export default function InventoryScreen() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [filteredMedicines, setFilteredMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMedicineFormModal, setShowMedicineFormModal] = useState(false); // State for form modal visibility
+  const [selectedMedicineForEdit, setSelectedMedicineForEdit] = useState<Medicine | null>(null); // State for medicine being edited
 
   useEffect(() => {
     loadMedicines();
@@ -45,33 +48,51 @@ export default function InventoryScreen() {
     }
   };
 
+  const handleSaveMedicine = async (medicine: Omit<Medicine, 'id'>, id?: string) => {
+    try {
+      if (id) {
+        // Edit existing medicine
+        await medicineService.update(id, medicine);
+        Alert.alert('Success', 'Medicine updated successfully!');
+      } else {
+        // Add new medicine
+        await medicineService.add(medicine);
+        Alert.alert('Success', 'Medicine added successfully!');
+      }
+      loadMedicines(); // Refresh the list
+    } catch (error) {
+      console.error('Error saving medicine:', error);
+      Alert.alert('Error', 'Failed to save medicine.');
+    }
+    setShowMedicineFormModal(false);
+    setSelectedMedicineForEdit(null);
+  };
+
   const addMedicine = () => {
-    Alert.alert(
-      'Add Medicine',
-      'Choose how to add medicine to inventory',
-      [
-        {
-          text: 'Scan Box',
-          onPress: () => Alert.alert('OCR', 'OCR scanning feature coming soon'),
-        },
-        {
-          text: 'Manual Entry',
-          onPress: () => Alert.alert('Manual Entry', 'Manual entry form coming soon'),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    setSelectedMedicineForEdit(null);
+    setShowMedicineFormModal(true);
   };
 
   const renderMedicineCard = ({ item }: { item: Medicine }) => {
     const isLowStock = item.stockLevel !== undefined && item.stockLevel < 100;
     
     return (
-      <Pressable
-        style={[styles.medicineCard, { backgroundColor: theme.surface }]}
-        android_ripple={{ color: theme.primary + '20' }}
-      >
-        <View style={styles.medicineHeader}>
+          <Pressable
+            style={[styles.medicineCard, { backgroundColor: theme.surface }]}
+            android_ripple={{ color: theme.primary + '20' }}
+            onPress={() => Alert.alert(
+              item.name,
+              `Manufacturer: ${item.manufacturer}\nStrength: ${item.strength}\nStock: ${item.stockLevel || 'N/A'}\n\nWhat would you like to do?`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Edit', onPress: () => {
+                  setSelectedMedicineForEdit(item);
+                  setShowMedicineFormModal(true);
+                }},
+                // Potentially add delete option here
+              ]
+            )}
+          >        <View style={styles.medicineHeader}>
           <View style={styles.medicineInfo}>
             <ThemedText style={[styles.medicineName, { color: theme.text }]}>
               {item.name}
@@ -176,6 +197,16 @@ export default function InventoryScreen() {
       >
         <MaterialCommunityIcons name="plus" size={24} color={theme.buttonText} />
       </Pressable>
+
+      <MedicineFormModal
+        visible={showMedicineFormModal}
+        onClose={() => {
+          setShowMedicineFormModal(false);
+          setSelectedMedicineForEdit(null);
+        }}
+        onSave={handleSaveMedicine}
+        initialMedicine={selectedMedicineForEdit}
+      />
     </ThemedView>
   );
 }

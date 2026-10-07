@@ -7,6 +7,7 @@ export interface User {
   username: string;
   phoneNumber: string;
   nationalId: string;
+  password?: string; // Added for mock authentication purposes
   role: UserRole;
   approvalStatus: ApprovalStatus;
   displayName: string;

@@ -154,6 +154,16 @@ export const prescriptionService = {
     );
     await storage.setData(storage.KEYS.PRESCRIPTIONS, updated);
   },
+
+  async updateMedicines(prescriptionId: string, medicines: PrescriptionMedicine[]): Promise<void> {
+    const all = await this.getAll();
+    const updated = all.map(p => 
+      p.id === prescriptionId 
+        ? { ...p, medicines: medicines } 
+        : p
+    );
+    await storage.setData(storage.KEYS.PRESCRIPTIONS, updated);
+  },
 };
 
 export const vitalSignsService = {
@@ -170,6 +180,28 @@ export const vitalSignsService = {
     };
     await storage.setData(storage.KEYS.VITAL_SIGNS, [...stored, newVital]);
     return newVital;
+  },
+};
+
+export const patientAllergyService = {
+  async getAll(): Promise<PatientAllergy[]> {
+    const stored = await storage.getData<PatientAllergy[]>(storage.KEYS.PATIENT_ALLERGIES);
+    return stored || [];
+  },
+
+  async getByPatientId(patientId: string): Promise<PatientAllergy[]> {
+    const all = await this.getAll();
+    return all.filter(a => a.patientId === patientId);
+  },
+
+  async add(allergy: Omit<PatientAllergy, 'id'>): Promise<PatientAllergy> {
+    const all = await this.getAll();
+    const newAllergy: PatientAllergy = {
+      ...allergy,
+      id: Date.now().toString(),
+    };
+    await storage.setData(storage.KEYS.PATIENT_ALLERGIES, [...all, newAllergy]);
+    return newAllergy;
   },
 };
 
@@ -213,30 +245,72 @@ export const MEDICAL_ADVICE = [
     title: 'Stay Hydrated',
     description: 'Drink at least 8 glasses of water daily to maintain proper hydration and support bodily functions.',
     icon: 'water',
+    conditions: [], // General advice
+    culturalContext: ['general'],
   },
   {
     title: 'Regular Exercise',
     description: 'Aim for 30 minutes of moderate exercise most days of the week to maintain cardiovascular health.',
     icon: 'run',
+    conditions: [],
+    culturalContext: ['general'],
   },
   {
     title: 'Healthy Diet',
     description: 'Eat a balanced diet rich in fruits, vegetables, whole grains, and lean proteins.',
     icon: 'food-apple',
+    conditions: [],
+    culturalContext: ['general'],
   },
   {
     title: 'Adequate Sleep',
     description: 'Get 7-9 hours of quality sleep each night to support immune function and mental health.',
     icon: 'sleep',
+    conditions: [],
+    culturalContext: ['general'],
   },
   {
     title: 'Stress Management',
     description: 'Practice relaxation techniques like meditation, deep breathing, or yoga to reduce stress.',
     icon: 'meditation',
+    conditions: [],
+    culturalContext: ['general'],
   },
   {
     title: 'Regular Check-ups',
     description: 'Schedule annual health screenings and follow up with your healthcare provider regularly.',
     icon: 'clipboard-pulse',
+    conditions: [],
+    culturalContext: ['general'],
+  },
+  // --- Condition-specific advice ---
+  {
+    title: 'Manage Blood Pressure',
+    description: 'If you have hypertension, monitor your blood pressure regularly and follow your doctor\'s recommendations for diet and medication.',
+    icon: 'heart-pulse',
+    conditions: ['hypertension'],
+    culturalContext: ['general'],
+  },
+  {
+    title: 'Balanced Meals for Diabetes',
+    description: 'Focus on consistent meal times, portion control, and choosing low glycemic index foods to manage blood sugar.',
+    icon: 'sugar-cube-outline',
+    conditions: ['diabetes'],
+    culturalContext: ['general'],
+  },
+  // --- Culturally-tailored advice (examples) ---
+  {
+    title: 'Mediterranean Diet Benefits',
+    description: 'Incorporate olive oil, nuts, seeds, fruits, vegetables, and fish for heart health, common in Mediterranean cultures.',
+    icon: 'food-olive',
+    conditions: ['heart disease'],
+    culturalContext: ['mediterranean'],
+  },
+  {
+    title: 'Traditional Herbal Remedies',
+    description: 'Consult with your healthcare provider before combining traditional herbal remedies with prescribed medications.',
+    icon: 'leaf',
+    conditions: [],
+    culturalContext: ['asian', 'african', 'indigenous'],
   },
 ];

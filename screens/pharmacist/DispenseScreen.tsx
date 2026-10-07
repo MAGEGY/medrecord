@@ -8,9 +8,12 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { prescriptionService, dispensingService } from '@/utils/data';
+import { Prescription } from '@/types';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 export default function DispenseScreen() {
+  const navigation = useNavigation(); // Initialize navigation
   const { theme } = useTheme();
   const { user } = useAuth();
   const tabBarHeight = useBottomTabBarHeight();
@@ -28,79 +31,51 @@ export default function DispenseScreen() {
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned || !user) return;
-    setScanned(true);
-    
+    setScanned(true); // Temporarily disable scanning until navigation occurs or user cancels
+
     const prescriptionId = data.replace('medrecord://prescription/', '');
     const prescription = await prescriptionService.getById(prescriptionId);
     
     if (prescription) {
-      Alert.alert(
-        'Prescription Found',
-        `Patient: ${prescription.patientName}\nMedicines: ${prescription.medicines.length}\n\nDispense this prescription?`,
-        [
-          { text: 'Cancel', onPress: () => setScanned(false) },
-          {
-            text: 'Full Dispense',
-            onPress: async () => {
-              await prescriptionService.dispense(prescription.id, user.id, false);
-              await dispensingService.record({
-                prescriptionId: prescription.id,
-                patientId: prescription.patientId,
-                patientName: prescription.patientName,
-                pharmacistId: user.id,
-                dispensedMedicines: prescription.medicines.map(m => ({
-                  medicineId: m.medicineId,
-                  medicineName: m.medicineName,
-                  quantityDispensed: m.quantity,
-                  quantityPrescribed: m.quantity,
-                })),
-                partial: false,
-              });
-              Alert.alert('Success', 'Prescription dispensed successfully');
-              setScanned(false);
-            },
-          },
-          {
-            text: 'Partial Dispense',
-            onPress: async () => {
-              await prescriptionService.dispense(prescription.id, user.id, true);
-              Alert.alert('Success', 'Prescription partially dispensed');
-              setScanned(false);
-            },
-          },
-        ]
-      );
+      navigation.navigate('PrescriptionDetailsForDispensing', { prescriptionId: prescription.id });
     } else {
-      Alert.alert('Error', 'Prescription not found', [
-        { text: 'Try Again', onPress: () => setScanned(false) },
+      Alert.alert('Prescription Not Found', 'No prescription found for this QR code.', [
+        { text: 'Try Again', onPress: () => setScanned(false) }, // Allow re-scan
       ]);
     }
   };
 
   const handleManualEntry = () => {
     Alert.prompt(
-      'Enter Prescription ID or Patient ID',
+      'Enter Prescription ID or Patient ID', // Updated prompt
       'Type the ID to look up the prescription',
-      async (id) => {
-        if (!id || !user) return;
+      async (idInput) => {
+        if (!idInput || !user) return;
         
-        let prescription = await prescriptionService.getById(id.trim());
-        
+        const trimmedId = idInput.trim();
+        let prescription: Prescription | null = null;
+
+        // First, try to find by Prescription ID
+        prescription = await prescriptionService.getById(trimmedId);
+
         if (!prescription) {
-          const prescriptions = await prescriptionService.getByPatientId(id.trim());
-          if (prescriptions.length > 0) {
-            prescription = prescriptions.filter(p => !p.dispensedAt)[0] || prescriptions[0];
+          // If not found by prescription ID, try to find by Patient ID
+          const patientPrescriptions = await prescriptionService.getByPatientId(trimmedId);
+          // Find the latest pending prescription for this patient
+          const pendingPrescription = patientPrescriptions
+            .filter(p => !p.dispensedAt) // Only pending ones
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Latest first
+            [0]; // Get the latest pending one
+
+          if (pendingPrescription) {
+            prescription = pendingPrescription;
           }
         }
         
         if (prescription) {
-          Alert.alert(
-            'Prescription Found',
-            `${prescription.id}\nPatient: ${prescription.patientName}`,
-            [{ text: 'OK' }]
-          );
+          navigation.navigate('PrescriptionDetailsForDispensing', { prescriptionId: prescription.id });
         } else {
-          Alert.alert('Error', 'No prescription found for this ID');
+          Alert.alert('Prescription Not Found', 'No prescription found for this ID.');
         }
       }
     );

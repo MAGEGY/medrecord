@@ -10,7 +10,7 @@ import { Spacing, BorderRadius } from '@/constants/theme';
 
 export default function LoginScreen({ navigation }: any) {
   const { theme } = useTheme();
-  const { login, authenticateWithBiometric } = useAuth();
+  const { login, authenticateWithBiometric, loginWithBiometric } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,9 +32,16 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   const handleBiometricLogin = async () => {
-    const success = await authenticateWithBiometric();
-    if (success) {
-      await login('biometric_user', 'biometric');
+    setLoading(true); // Start loading state for biometric login
+    try {
+      const success = await loginWithBiometric();
+      if (!success) {
+        Alert.alert('Biometric Login Failed', 'Please try again or use your credentials.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Biometric login failed. Please try again.');
+    } finally {
+      setLoading(false); // End loading state
     }
   };
 

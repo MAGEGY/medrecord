@@ -8,12 +8,14 @@ import PatientHomeScreen from '@/screens/patient/PatientHomeScreen';
 import MedicationsScreen from '@/screens/patient/MedicationsScreen';
 import LifestyleScreen from '@/screens/patient/LifestyleScreen';
 import ProfileScreen from '@/screens/shared/ProfileScreen';
+import ViewPrescriptionScreen from '@/screens/patient/ViewPrescriptionScreen'; // Import ViewPrescriptionScreen
 
 export type PatientTabParamList = {
   Home: undefined;
   Medications: undefined;
   Lifestyle: undefined;
   Profile: undefined;
+  ViewPrescription: { prescriptionId: string }; // Added ViewPrescription
 };
 
 const Tab = createBottomTabNavigator<PatientTabParamList>();
@@ -89,6 +91,14 @@ export default function PatientTabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <Feather name="user" size={size} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen // Hidden View Prescription Screen
+        name="ViewPrescription"
+        component={ViewPrescriptionScreen}
+        options={{
+          headerShown: false, // ViewPrescriptionScreen handles its own header
+          tabBarButton: () => null, // Hide this screen from the tab bar
         }}
       />
     </Tab.Navigator>

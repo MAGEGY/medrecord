@@ -8,12 +8,14 @@ import DispenseScreen from '@/screens/pharmacist/DispenseScreen';
 import InventoryScreen from '@/screens/pharmacist/InventoryScreen';
 import HistoryScreen from '@/screens/pharmacist/HistoryScreen';
 import ProfileScreen from '@/screens/shared/ProfileScreen';
+import PrescriptionDetailsForDispensingScreen from '@/screens/pharmacist/PrescriptionDetailsForDispensingScreen'; // Import PrescriptionDetailsForDispensingScreen
 
 export type PharmacistTabParamList = {
   Dispense: undefined;
   Inventory: undefined;
   History: undefined;
   Profile: undefined;
+  PrescriptionDetailsForDispensing: { prescriptionId: string }; // Added PrescriptionDetailsForDispensing
 };
 
 const Tab = createBottomTabNavigator<PharmacistTabParamList>();
@@ -89,6 +91,14 @@ export default function PharmacistTabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <Feather name="user" size={size} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen // Hidden Prescription Details for Dispensing Screen
+        name="PrescriptionDetailsForDispensing"
+        component={PrescriptionDetailsForDispensingScreen}
+        options={{
+          headerShown: false, // Handles its own header
+          tabBarButton: () => null, // Hide this screen from the tab bar
         }}
       />
     </Tab.Navigator>

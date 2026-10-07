@@ -58,6 +58,7 @@ export default function PatientsScreen() {
     <Pressable
       style={[styles.patientCard, { backgroundColor: theme.surface }]}
       android_ripple={{ color: theme.primary + '20' }}
+      onPress={() => navigation.navigate('PatientDetail', { patientId: item.id })} // Navigate to PatientDetail
     >
       <Image source={AVATARS[item.avatarIndex]} style={styles.avatar} />
       <View style={styles.patientInfo}>

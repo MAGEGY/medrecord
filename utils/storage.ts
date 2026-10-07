@@ -8,6 +8,7 @@ const KEYS = {
   VITAL_SIGNS: '@medrecord_vital_signs',
   LIFESTYLE_DATA: '@medrecord_lifestyle',
   DISPENSING_HISTORY: '@medrecord_dispensing',
+  PATIENT_ALLERGIES: '@medrecord_patient_allergies', // Added for patient allergies
 };
 
 export const storage = {

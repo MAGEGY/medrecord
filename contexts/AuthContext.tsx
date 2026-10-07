@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (userData: Omit<User, 'id' | 'createdAt' | 'approvalStatus'>) => Promise<boolean>;
   logout: () => Promise<void>;
   authenticateWithBiometric: () => Promise<boolean>;
+  loginWithBiometric: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,23 +34,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    const mockUser: User = {
-      id: '1',
-      username,
-      phoneNumber: '+1234567890',
-      nationalId: 'ID123456',
-      role: 'doctor',
-      approvalStatus: 'approved',
-      displayName: 'Dr. ' + username,
-      avatarIndex: 0,
-      biometricEnabled: true,
-      createdAt: new Date().toISOString(),
-    };
+const mockUsers: User[] = [
+  {
+    id: 'user-doctor-1',
+    username: 'doctor1',
+    phoneNumber: '+11234567890',
+    nationalId: 'DOC123456',
+    password: 'password', // For mock purposes only
+    role: 'doctor',
+    approvalStatus: 'approved',
+    displayName: 'Dr. Alice',
+    avatarIndex: 0,
+    biometricEnabled: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'user-patient-1',
+    username: 'patient1',
+    phoneNumber: '+19876543210',
+    nationalId: 'PAT654321',
+    password: 'password', // For mock purposes only
+    role: 'patient',
+    approvalStatus: 'approved',
+    displayName: 'Mr. Bob',
+    avatarIndex: 1,
+    biometricEnabled: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'user-pharmacist-1',
+    username: 'pharmacist1',
+    phoneNumber: '+15551234567',
+    nationalId: 'PHA987654',
+    password: 'password', // For mock purposes only
+    role: 'pharmacist',
+    approvalStatus: 'approved',
+    displayName: 'Ms. Carol',
+    avatarIndex: 2,
+    biometricEnabled: true,
+    createdAt: new Date().toISOString(),
+  },
+];
 
-    await storage.setUser(mockUser);
-    setUser(mockUser);
-    return true;
+  const login = async (identifier: string, passwordInput: string): Promise<boolean> => {
+    const foundUser = mockUsers.find(user =>
+      user.username === identifier ||
+      user.phoneNumber === identifier ||
+      user.nationalId === identifier
+    );
+
+    if (foundUser && foundUser.password === passwordInput) {
+      // In a real app, you'd fetch the full user data from a backend after successful auth
+      await storage.setUser(foundUser);
+      setUser(foundUser);
+      return true;
+    }
+
+    return false;
   };
 
   const register = async (userData: Omit<User, 'id' | 'createdAt' | 'approvalStatus'>): Promise<boolean> => {
@@ -94,8 +135,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithBiometric = async (): Promise<boolean> => {
+    try {
+      const biometricSuccess = await authenticateWithBiometric();
+      if (biometricSuccess) {
+        const savedUser = await storage.getUser();
+        if (savedUser && savedUser.biometricEnabled) {
+          setUser(savedUser);
+          return true;
+        } else {
+          console.log('Biometric login failed: No user saved or biometrics not enabled for user.');
+          return false;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Login with biometric error:', error);
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, authenticateWithBiometric }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, authenticateWithBiometric, loginWithBiometric }}>
       {children}
     </AuthContext.Provider>
   );

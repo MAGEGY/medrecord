@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Pressable, TextInput, Alert } from 'react
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import LifestyleInputModal from '@/components/LifestyleInputModal'; // Import LifestyleInputModal
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
@@ -10,12 +11,16 @@ import { lifestyleService } from '@/utils/data';
 import { LifestyleData } from '@/types';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
+type LifestyleField = 'steps' | 'calories' | 'bloodPressure'; // Define type here for use in state
+
 export default function LifestyleScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const tabBarHeight = useBottomTabBarHeight();
   const [todayData, setTodayData] = useState<LifestyleData | null>(null);
   const [lifestyleHistory, setLifestyleHistory] = useState<LifestyleData[]>([]);
+  const [showLifestyleModal, setShowLifestyleModal] = useState(false); // New state for modal visibility
+  const [initialLifestyleField, setInitialLifestyleField] = useState<LifestyleField | undefined>(undefined); // New state for initial field
 
   useEffect(() => {
     loadData();
@@ -31,55 +36,24 @@ export default function LifestyleScreen() {
     setTodayData(todayRecord || null);
   };
 
-  const addVitalSign = (type: string) => {
-    Alert.prompt(
-      `Add ${type}`,
-      `Enter your ${type} value`,
-      async (value) => {
-        if (!value || !user) return;
-        
-        const today = new Date().toISOString().split('T')[0];
-        const numValue = parseFloat(value);
-        
-        if (isNaN(numValue)) {
-          Alert.alert('Error', 'Please enter a valid number');
-          return;
-        }
-
-        const newData: Partial<LifestyleData> = {
-          patientId: user.id,
-          date: today,
-        };
-
-        switch (type) {
-          case 'Steps':
-            newData.steps = numValue;
-            break;
-          case 'Calories':
-            newData.calories = numValue;
-            break;
-          case 'Blood Pressure':
-            Alert.prompt('Systolic', 'Enter systolic value', async (sys) => {
-              if (!sys) return;
-              Alert.prompt('Diastolic', 'Enter diastolic value', async (dia) => {
-                if (!dia) return;
-                const data: Omit<LifestyleData, 'id'> = {
-                  patientId: user.id,
-                  date: today,
-                  bloodPressureSystolic: parseInt(sys),
-                  bloodPressureDiastolic: parseInt(dia),
-                };
-                await lifestyleService.add(data);
-                loadData();
-              });
-            });
-            return;
-        }
-
-        await lifestyleService.add(newData as Omit<LifestyleData, 'id'>);
-        loadData();
-      }
-    );
+  const handleSaveLifestyleData = async (data: Omit<LifestyleData, 'id' | 'patientId' | 'date'>) => {
+    if (!user) {
+      Alert.alert('Error', 'User not logged in.');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      await lifestyleService.add({
+        ...data,
+        patientId: user.id,
+        date: today,
+      });
+      loadData(); // Reload data to update UI
+      Alert.alert('Success', 'Lifestyle data recorded successfully!');
+    } catch (error) {
+      console.error('Error saving lifestyle data:', error);
+      Alert.alert('Error', 'Failed to save lifestyle data.');
+    }
   };
 
   const QuickAddButton = ({ icon, title, color, onPress }: any) => (
@@ -153,19 +127,28 @@ export default function LifestyleScreen() {
               icon="shoe-sneaker"
               title="Steps"
               color={theme.success}
-              onPress={() => addVitalSign('Steps')}
+              onPress={() => {
+                setInitialLifestyleField('steps');
+                setShowLifestyleModal(true);
+              }}
             />
             <QuickAddButton
               icon="fire"
               title="Calories"
               color={theme.warning}
-              onPress={() => addVitalSign('Calories')}
+              onPress={() => {
+                setInitialLifestyleField('calories');
+                setShowLifestyleModal(true);
+              }}
             />
             <QuickAddButton
               icon="blood-bag"
               title="BP"
               color={theme.primary}
-              onPress={() => addVitalSign('Blood Pressure')}
+              onPress={() => {
+                setInitialLifestyleField('bloodPressure');
+                setShowLifestyleModal(true);
+              }}
             />
           </View>
         </View>
@@ -212,6 +195,13 @@ export default function LifestyleScreen() {
           )}
         </View>
       </ThemedView>
+
+      <LifestyleInputModal
+        visible={showLifestyleModal}
+        onClose={() => setShowLifestyleModal(false)}
+        onSave={handleSaveLifestyleData}
+        initialField={initialLifestyleField}
+      />
     </ScrollView>
   );
 }

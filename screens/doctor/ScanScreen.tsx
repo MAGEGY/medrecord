@@ -9,8 +9,10 @@ import { Spacing, BorderRadius } from '@/constants/theme';
 import { patientService } from '@/utils/data';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 
 export default function ScanScreen() {
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -36,14 +38,9 @@ export default function ScanScreen() {
     const patient = await patientService.getById(patientId);
     
     if (patient) {
-      Alert.alert(
-        'Patient Found',
-        `${patient.displayName}\nID: ${patient.id}`,
-        [
-          { text: 'View Records', onPress: () => {} },
-          { text: 'Scan Again', onPress: () => setScanned(false) },
-        ]
-      );
+      // Navigate to PatientDetail screen
+      navigation.navigate('PatientDetail' as never, { patientId: patient.id } as never);
+      setScanned(false); // Reset after navigation
     } else {
       Alert.alert('Error', 'Patient not found', [
         { text: 'Try Again', onPress: () => setScanned(false) },

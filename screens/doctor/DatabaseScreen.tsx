@@ -8,14 +8,28 @@ import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { medicineService } from '@/utils/data';
 import { Medicine } from '@/types';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
+import { useCallback } from 'react'; // Import useCallback
 
 export default function DatabaseScreen() {
   const { theme } = useTheme();
+  const navigation = useNavigation(); // Get navigation object
   const tabBarHeight = useBottomTabBarHeight();
   const [searchQuery, setSearchQuery] = useState('');
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [filteredMedicines, setFilteredMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Callback to receive OCR scanned text
+  const handleScanResult = useCallback((scannedText: string) => {
+    setSearchQuery(scannedText); // Populate search bar with scanned text
+    // In a real app, you might want to parse the text and pre-fill a new medicine form
+  }, []);
+
+  const handleScanPress = () => {
+    // Navigate to OCRScanner screen and pass the callback
+    navigation.navigate('OCRScanner' as never, { onScan: handleScanResult } as never);
+  };
 
   useEffect(() => {
     loadMedicines();
@@ -119,6 +133,9 @@ export default function DatabaseScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          <Pressable onPress={handleScanPress} style={styles.scanButton}>
+            <MaterialCommunityIcons name="line-scan" size={24} color={theme.primary} />
+          </Pressable>
         </View>
       </View>
 
@@ -163,6 +180,9 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+  },
+  scanButton: {
+    paddingLeft: Spacing.md,
   },
   listContent: {
     padding: Spacing.lg,
