@@ -129,7 +129,7 @@ export const prescriptionService = {
       id,
       createdAt: new Date().toISOString(),
       qrCode: `medrecord://prescription/${id}`,
-      webLink: `https://medrecord.app/rx/${id}`,
+      webLink: `https://magegy.github.io/medrecord/`,
     };
     await storage.setData(storage.KEYS.PRESCRIPTIONS, [...all, newPrescription]);
     return newPrescription;

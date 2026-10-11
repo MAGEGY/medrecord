@@ -4,7 +4,7 @@ import FloatingHelp from "@/components/FloatingHelp";
 import type { HelpFunction, HelpHowTo } from "@/components/FloatingHelp";
 
 const BASE_HOWTOS: HelpHowTo[] = [
-  { title: "Create an account", body: "Register with your name, email and role (doctor, patient, pharmacist). New accounts need approval before you can sign in — once approved, log in with your email and password." },
+  { title: "Create an account", body: "Register with your name, email and role (doctor, patient, pharmacist). In this local version your account is created and approved immediately — you are signed in right away." },
   { title: "Scan a medicine package", body: "Use the Scan screen to photograph a medicine package — the app reads the package text with OCR and identifies the medicine for you." },
   { title: "Prescriptions", body: "Doctors create prescriptions for their patients; patients open and read them; pharmacists dispense against them and track inventory." },
   { title: "Share a record with QR", body: "Patients can generate a QR code for a prescription or record — the pharmacy scans it to dispense the right items." },
