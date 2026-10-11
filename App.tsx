@@ -10,6 +10,8 @@ import { StatusBar } from "expo-status-bar";
 import RootNavigator from "@/navigation/RootNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AppHelp from "@/components/AppHelp";
+import { navigationRef } from "@/navigation/navigationRef";
 
 const prefix = Linking.createURL('/'); // Example: medrecord://
 const linking = {
@@ -46,9 +48,10 @@ export default function App() {
         <GestureHandlerRootView style={styles.root}>
           <KeyboardProvider>
             <AuthProvider>
-              <NavigationContainer linking={linking}>
+              <NavigationContainer ref={navigationRef} linking={linking}>
                 <RootNavigator />
               </NavigationContainer>
+              <AppHelp />
             </AuthProvider>
             <StatusBar style="auto" />
           </KeyboardProvider>
