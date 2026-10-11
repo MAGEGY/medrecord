@@ -16,12 +16,13 @@ interface Props {
   functions: HelpFunction[]
   howtos?: HelpHowTo[]
   color?: string
+  rtl?: boolean
 }
 
-// Floating help: circular button (bottom-right) opens a searchable panel
-// listing the app's functions (tap = navigate/act) and how-to guides.
-// Same UX as the PharmaPOS help search.
-export default function FloatingHelp({ functions, howtos = [], color = '#0e7490' }: Props) {
+// Floating help: circular button (bottom-right, or bottom-left for RTL
+// languages) opens a searchable panel listing the app's functions
+// (tap = navigate/act) and how-to guides. Same UX as the PharmaPOS help search.
+export default function FloatingHelp({ functions, howtos = [], color = '#0e7490', rtl = false }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -41,7 +42,10 @@ export default function FloatingHelp({ functions, howtos = [], color = '#0e7490'
 
   return (
     <>
-      <View style={styles.fabWrap} pointerEvents="box-none">
+      <View
+        style={[styles.fabWrap, rtl ? { left: 20 } : { right: 20 }]}
+        pointerEvents="box-none"
+      >
         <Pressable
           onPress={() => setOpen(true)}
           accessibilityLabel="Help & Guide"
@@ -121,7 +125,7 @@ export default function FloatingHelp({ functions, howtos = [], color = '#0e7490'
 }
 
 const styles = StyleSheet.create({
-  fabWrap: { position: 'absolute', bottom: 24, right: 20, zIndex: 100, elevation: 100 },
+  fabWrap: { position: 'absolute', bottom: 24, zIndex: 100, elevation: 100 },
   fab: {
     width: 52, height: 52, borderRadius: 26,
     alignItems: 'center', justifyContent: 'center',
